@@ -135,39 +135,16 @@ const robotImage = [
 
 const HORIZON_HEIGHT = 220; // 地面の高さ
 
-let gameObjects = [
-  {
-    type: 'player',
-    x: 30,
-    y: HORIZON_HEIGHT,
-    ax: 0,
-    ay: 0,
-    r: 0,
-    backward: false,
-    fireCounter: 0,
-  },
-  {
-    type: 'enemy',
-    x: 290,
-    y: HORIZON_HEIGHT,
-    ay: 0,
-    r: 0,
-    backward: true,
-  },
+const gameObjects = [
+  { type: 'player', x: 30, y: HORIZON_HEIGHT, ay: 0, r: 0, backward: false },
   { type: 'fps' },
   { type: 'gameInput' },
 ];
-let newObjects = [];
 
 const functions = {
   fps: (obj) => {
     // FPSを画面に描画する
-    ctx.fillText(
-      `fps: ${prevFps.toString()}, Objects: ${gameObjects.length}`,
-      10,
-      15
-    );
-    return true;
+    ctx.fillText('fps: ' + prevFps.toString(), 10, 15);
   },
 
   gameInput: () => {
@@ -184,30 +161,24 @@ const functions = {
     s += gameInput.a ? 'A' : '_';
     s += gameInput.b ? 'B' : '_';
     ctx.fillText('controller: ' + s, 10, 30);
-    return true;
   },
 
   player: (obj) => {
     const DRAW_CENTER_HEIGHT = 10;
 
-    const mirror = obj.backward ? -1 : 1;
+    // 地面より上にいれば下方向に加速させる
+    if (obj.y < HORIZON_HEIGHT) {
+      obj.ay += 0.6;
+    }
 
     // 入力に応じでキャラを動かす
     {
       // 左右移動
       if (gameInput.l_left) {
-        if (-3 < obj.ax && obj.ax < 0) {
-          obj.ax = -3;
-        } else {
-          obj.ax -= 0.5;
-        }
+        obj.x -= 3;
       }
       if (gameInput.l_right) {
-        if (0 < obj.ax && obj.ax < 3) {
-          obj.ax = 3;
-        } else {
-          obj.ax += 0.5;
-        }
+        obj.x += 3;
       }
 
       // 上昇
@@ -232,43 +203,10 @@ const functions = {
       if (obj.r > 40) obj.r = 40;
     }
 
-    // 弾を打つ
-    if (gameInput.b && obj.fireCounter === 0) {
-      obj.fireCounter = 10;
-    }
-    if (obj.fireCounter > 5) {
-      newObjects.push({
-        type: 'bullet',
-        x: obj.x + rx(0, -10, obj.r) * mirror,
-        y: obj.y - DRAW_CENTER_HEIGHT + ry(0, -10, obj.r),
-        ax: rx(30, 0, obj.r) * mirror,
-        ay: ry(30, 0, obj.r),
-        backward: obj.backward,
-        r: obj.r,
-      });
-
-      // 反動を付与
-      obj.ax += rx(-2, -0.3, obj.r) * mirror;
-      obj.ay += ry(-2, -0.3, obj.r);
-    }
-    if (obj.fireCounter > 0) obj.fireCounter--;
-
-    // 重力
-    if (obj.y < HORIZON_HEIGHT) {
-      // 地面より上にいれば下方向に加速させる
-      obj.ay += 0.6;
-    }
-
-    // 横方向の減衰
-    if (obj.ax != 0) obj.ax = obj.ax * 0.8;
-
-    // 加速度を反映
-    obj.x += obj.ax;
     obj.y += obj.ay;
 
-    // 地面に着いたら加速を止める
+    // 地面に着いたら下方向の加速を止める
     if (obj.y > HORIZON_HEIGHT) {
-      obj.ax = 0;
       obj.ay = 0;
       obj.y = HORIZON_HEIGHT;
     }
@@ -281,43 +219,6 @@ const functions = {
       'rgb(0, 0, 255)',
       robotImage
     );
-
-    return true;
-  },
-
-  enemy: (obj) => {
-    const DRAW_CENTER_HEIGHT = 10;
-
-    drawObject(
-      obj.x,
-      obj.y - DRAW_CENTER_HEIGHT,
-      obj.r,
-      obj.backward,
-      'rgb(150, 0, 0)',
-      robotImage
-    );
-
-    return true;
-  },
-
-  bullet: (obj) => {
-    obj.x += obj.ax;
-    obj.y += obj.ay;
-
-    // 弾を画面に描画
-    drawObject(obj.x, obj.y, obj.r, obj.backward, 'rgb(0, 0, 255)', [
-      [
-        { x: 0, y: 0 },
-        { x: -20, y: 0 },
-      ],
-    ]);
-
-    // 画面外に出たら消す
-    if (obj.x < -20 || obj.x > 340 || obj.y < -20 || obj.y > 260) {
-      return false;
-    }
-
-    return true;
   },
 };
 
@@ -357,13 +258,9 @@ function gameLoop() {
   ctx.clearRect(0, 0, 320, 240); // 画面を消去
 
   // ゲームオブジェクトを処理
-  newObjects = [];
   gameObjects.forEach((obj) => {
-    if (functions[obj.type](obj)) {
-      newObjects.push(obj);
-    }
+    functions[obj.type](obj);
   });
-  gameObjects = newObjects;
 
   // FPS値を計算する
   if (begin - prevTime > 1000) {

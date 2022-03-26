@@ -142,6 +142,7 @@ let gameObjects = [
     y: HORIZON_HEIGHT,
     ax: 0,
     ay: 0,
+
     r: 0,
     backward: false,
     fireCounter: 0,
@@ -167,6 +168,7 @@ const functions = {
       10,
       15
     );
+
     return true;
   },
 
@@ -184,6 +186,7 @@ const functions = {
     s += gameInput.a ? 'A' : '_';
     s += gameInput.b ? 'B' : '_';
     ctx.fillText('controller: ' + s, 10, 30);
+
     return true;
   },
 
@@ -201,6 +204,7 @@ const functions = {
         } else {
           obj.ax -= 0.5;
         }
+        obj.backward = true;
       }
       if (gameInput.l_right) {
         if (0 < obj.ax && obj.ax < 3) {
@@ -208,6 +212,7 @@ const functions = {
         } else {
           obj.ax += 0.5;
         }
+        obj.backward = false;
       }
 
       // 上昇
