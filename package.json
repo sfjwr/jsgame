@@ -1,6 +1,6 @@
 {
   "name": "jsgame",
-  "private": true,
+  "license": "GPLv3",
   "devDependencies": {
     "eslint": "^7.6.0",
     "prettier": "^2.3.2",
