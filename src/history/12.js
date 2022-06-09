@@ -202,7 +202,6 @@ let newObjects = [];
 const functions = {
   fps: (obj) => {
     // 内部情報を画面に描画する
-    ctx.fillStyle = '#000';
     ctx.fillText(
       `fps: ${prevFps.toString()}, Objects: ${gameObjects.length}`,
       10,
@@ -326,11 +325,10 @@ const functions = {
       obj.y - DRAW_CENTER_HEIGHT,
       obj.r,
       obj.backward,
-      obj.hit ? 'lightgray' : obj.color,
+      obj.color,
       robotImage
     );
 
-    obj.hit = false;
     return true;
   },
 
@@ -358,24 +356,11 @@ const functions = {
       input.l_top = false;
     }
 
-    if (Math.random() < 0.1) {
-      input.b = true;
-    }
-
     return functions.player(obj, input);
   },
 
   bullet: (obj) => {
-    const mirror = obj.backward ? -1 : 1;
     if (obj.hit) {
-      newObjects.push({
-        type: 'debris',
-        x: obj.x,
-        y: obj.y,
-        ax: rx(-5, -5 * Math.random(), obj.r) * mirror,
-        ay: ry(-5, -5 * Math.random(), obj.r),
-        lifeLimit: 10,
-      });
       return false;
     }
 
@@ -392,28 +377,6 @@ const functions = {
 
     // 画面外に出たら消す
     if (obj.x < -20 || obj.x > 340 || obj.y < -20 || obj.y > 260) {
-      return false;
-    }
-
-    return true;
-  },
-
-  debris: (obj) => {
-    obj.ay += 1;
-
-    obj.x += obj.ax;
-    obj.y += obj.ay;
-
-    if (obj.y > HORIZON_HEIGHT) {
-      obj.y = HORIZON_HEIGHT - (obj.y - HORIZON_HEIGHT);
-      obj.ay = -obj.ay * 0.5;
-      obj.ax = obj.ax * 0.5;
-    }
-
-    ctx.fillStyle = '#aaa';
-    ctx.fillRect(obj.x - 2, obj.y - 2, 4, 4);
-
-    if (obj.lifeLimit-- < 0) {
       return false;
     }
 

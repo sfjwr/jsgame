@@ -358,10 +358,6 @@ const functions = {
       input.l_top = false;
     }
 
-    if (Math.random() < 0.1) {
-      input.b = true;
-    }
-
     return functions.player(obj, input);
   },
 

@@ -102,36 +102,6 @@ function drawObject(x, y, degree, backword, color, lines) {
   ctx.stroke();
 }
 
-function hitCheck(linesA, linesB) {
-  for (let lineA of linesA) {
-    for (let lineB of linesB) {
-      const vAx = lineA.ex - lineA.bx;
-      const vAy = lineA.ey - lineA.by;
-      const vBBx = lineB.bx - lineA.bx;
-      const vBBy = lineB.by - lineA.by;
-      const vBEx = lineB.ex - lineA.bx;
-      const vBEy = lineB.ey - lineA.by;
-      const vAvBc0 = vAx * vBBy - vAy * vBBx;
-      const vAvBc1 = vAx * vBEy - vAy * vBEx;
-      if (vAvBc0 * vAvBc1 > 0) continue;
-
-      const vBx = lineB.ex - lineB.bx;
-      const vBy = lineB.ey - lineB.by;
-      const vABx = lineA.bx - lineB.bx;
-      const vABy = lineA.by - lineB.by;
-      const vAEx = lineA.ex - lineB.bx;
-      const vAEy = lineA.ey - lineB.by;
-      const vBvAc0 = vBx * vABy - vBy * vABx;
-      const vBvAc1 = vBx * vAEy - vBy * vAEx;
-      if (vBvAc0 * vBvAc1 > 0) continue;
-
-      return true;
-    }
-  }
-
-  return false;
-}
-
 const robotImage = [
   [
     { x: -3, y: -16 },
@@ -178,7 +148,6 @@ let gameObjects = [
     fireCounter: 0,
 
     color: 'rgb(0, 0, 255)',
-    layer: 0,
   },
   {
     type: 'enemy',
@@ -192,7 +161,6 @@ let gameObjects = [
     fireCounter: 0,
 
     color: 'rgb(150, 0, 0)',
-    layer: 1,
   },
   { type: 'fps' },
   { type: 'gameInput' },
@@ -202,7 +170,6 @@ let newObjects = [];
 const functions = {
   fps: (obj) => {
     // 内部情報を画面に描画する
-    ctx.fillStyle = '#000';
     ctx.fillText(
       `fps: ${prevFps.toString()}, Objects: ${gameObjects.length}`,
       10,
@@ -292,7 +259,6 @@ const functions = {
         ay: ry(30, 0, obj.r),
         backward: obj.backward,
         r: obj.r,
-        layer: obj.layer,
       });
 
       // 反動を付与
@@ -326,11 +292,10 @@ const functions = {
       obj.y - DRAW_CENTER_HEIGHT,
       obj.r,
       obj.backward,
-      obj.hit ? 'lightgray' : obj.color,
+      obj.color,
       robotImage
     );
 
-    obj.hit = false;
     return true;
   },
 
@@ -358,27 +323,10 @@ const functions = {
       input.l_top = false;
     }
 
-    if (Math.random() < 0.1) {
-      input.b = true;
-    }
-
     return functions.player(obj, input);
   },
 
   bullet: (obj) => {
-    const mirror = obj.backward ? -1 : 1;
-    if (obj.hit) {
-      newObjects.push({
-        type: 'debris',
-        x: obj.x,
-        y: obj.y,
-        ax: rx(-5, -5 * Math.random(), obj.r) * mirror,
-        ay: ry(-5, -5 * Math.random(), obj.r),
-        lifeLimit: 10,
-      });
-      return false;
-    }
-
     obj.x += obj.ax;
     obj.y += obj.ay;
 
@@ -396,89 +344,6 @@ const functions = {
     }
 
     return true;
-  },
-
-  debris: (obj) => {
-    obj.ay += 1;
-
-    obj.x += obj.ax;
-    obj.y += obj.ay;
-
-    if (obj.y > HORIZON_HEIGHT) {
-      obj.y = HORIZON_HEIGHT - (obj.y - HORIZON_HEIGHT);
-      obj.ay = -obj.ay * 0.5;
-      obj.ax = obj.ax * 0.5;
-    }
-
-    ctx.fillStyle = '#aaa';
-    ctx.fillRect(obj.x - 2, obj.y - 2, 4, 4);
-
-    if (obj.lifeLimit-- < 0) {
-      return false;
-    }
-
-    return true;
-  },
-};
-
-const hitCheckFunctions = {
-  player: (obj, attack) => {
-    // 相手の弾とだけ判定をとる
-    if (attack.type !== 'bullet' || obj.layer === attack.layer) return;
-
-    const DRAW_CENTER_HEIGHT = 10;
-    const mirror = obj.backward ? -1 : 1;
-
-    // キャラクタの当たり判定は長方形
-    const charHitLines = [
-      {
-        bx: obj.x + rx(-5, -15, obj.r) * mirror,
-        by: obj.y + ry(-5, -15, obj.r) - DRAW_CENTER_HEIGHT,
-        ex: obj.x + rx(5, -15, obj.r) * mirror,
-        ey: obj.y + ry(5, -15, obj.r) - DRAW_CENTER_HEIGHT,
-      },
-      {
-        bx: obj.x + rx(5, -15, obj.r) * mirror,
-        by: obj.y + ry(5, -15, obj.r) - DRAW_CENTER_HEIGHT,
-        ex: obj.x + rx(5, 10, obj.r) * mirror,
-        ey: obj.y + ry(5, 10, obj.r) - DRAW_CENTER_HEIGHT,
-      },
-      {
-        bx: obj.x + rx(5, 10, obj.r) * mirror,
-        by: obj.y + ry(5, 10, obj.r) - DRAW_CENTER_HEIGHT,
-        ex: obj.x + rx(-5, 10, obj.r) * mirror,
-        ey: obj.y + ry(-5, 10, obj.r) - DRAW_CENTER_HEIGHT,
-      },
-      {
-        bx: obj.x + rx(-5, 10, obj.r) * mirror,
-        by: obj.y + ry(-5, 10, obj.r) - DRAW_CENTER_HEIGHT,
-        ex: obj.x + rx(-5, -15, obj.r) * mirror,
-        ey: obj.y + ry(-5, -15, obj.r) - DRAW_CENTER_HEIGHT,
-      },
-    ];
-
-    // 弾の当たり判定は線
-    const bulletHitLines = [
-      {
-        bx: attack.x,
-        by: attack.y,
-        ex: attack.x - attack.ax,
-        ey: attack.y - attack.ay,
-      },
-    ];
-
-    if (hitCheck(charHitLines, bulletHitLines)) {
-      // 当たっていたら相手を若干後ろに押す
-      obj.ax += attack.ax / 10;
-      obj.ay += attack.ay / 10;
-
-      obj.hit = true;
-      attack.hit = true;
-    }
-  },
-
-  enemy: (obj, attack) => {
-    hitCheckFunctions.player(obj, attack);
   },
 };
 
@@ -525,16 +390,6 @@ function gameLoop() {
     }
   });
   gameObjects = newObjects;
-
-  // 攻撃判定
-  gameObjects.forEach((defence) => {
-    gameObjects.forEach((attack) => {
-      if (defence === attack || !hitCheckFunctions[defence.type]) {
-        return;
-      }
-      hitCheckFunctions[defence.type](defence, attack);
-    });
-  });
 
   // FPS値を計算する
   if (begin - prevTime > 1000) {
